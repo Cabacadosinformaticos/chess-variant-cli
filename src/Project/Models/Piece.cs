@@ -3,130 +3,168 @@ using System.Collections.Generic;
 
 namespace Chess.Models {
     /// <summary>
-    /// Classe base para todas as peças no jogo de xadrez.
+    /// Base class for every piece on the board. A piece knows its colour, its type and index,
+    /// where it is, and which of its special operations have already been used.
     /// </summary>
     public class Piece {
         /// <summary>
-        /// Representação simbólica da peça (e.g., "BP1" para um peão preto).
+        /// Symbol of the piece: colour (W/B) + type (P/R/H/B/Q/K) + index, e.g. "BP1" or "WQ10".
         /// </summary>
         public string Symbol { get; }
 
         /// <summary>
-        /// Linha atual da peça no tabuleiro (baseada em índices 0-7).
-        /// </summary>
-        public int Row { get; private set; }
-
-        /// <summary>
-        /// Coluna atual da peça no tabuleiro (baseada em índices 0-7).
-        /// </summary>
-        public int Column { get; private set; }
-
-        /// <summary>
-        /// Cor da peça ('W' para branco, 'B' para preto).
+        /// Colour of the piece, 'W' for white and 'B' for black.
         /// </summary>
         public char Color { get; }
 
         /// <summary>
-        /// Referência ao tabuleiro onde a peça está localizada.
+        /// Type of the piece: 'P', 'R', 'H', 'B', 'Q' or 'K' (second character of the symbol).
         /// </summary>
-        public Piece[][] Board { get; }
+        public char Type { get; }
 
         /// <summary>
-        /// Indica se a peça já foi movida no jogo.
+        /// Positive index of the piece inside the set of pieces of the same colour and type.
         /// </summary>
-        public bool HasMoved { get; private set; }
+        public int Index { get; }
 
         /// <summary>
-        /// Construtor que inicializa uma nova peça.
+        /// Current row (0 based, 0 is the top row of the printed board).
         /// </summary>
-        /// <param name="board">Referência ao tabuleiro de jogo.</param>
-        /// <param name="color">Cor da peça ('W' ou 'B').</param>
-        /// <param name="symbol">Símbolo representando a peça.</param>
-        /// <param name="row">Linha inicial da peça.</param>
-        /// <param name="column">Coluna inicial da peça.</param>
-        public Piece(Piece[][] board, char color, string symbol, int row, int column) {
+        public int Row { get; protected set; }
+
+        /// <summary>
+        /// Current column (0 based, 0 is column A).
+        /// </summary>
+        public int Column { get; protected set; }
+
+        /// <summary>
+        /// True once the piece has been moved in the current game. Used by castling and by the
+        /// pawn double step.
+        /// </summary>
+        public bool HasMoved { get; protected set; }
+
+        /// <summary>
+        /// True once the piece has used its once-per-game special operation (pawn, rook, bishop).
+        /// </summary>
+        public bool SpecialUsed { get; protected set; }
+
+        /// <summary>
+        /// Grid the piece belongs to, shared with every other piece of the same board.
+        /// </summary>
+        public Piece?[][] Board { get; }
+
+        /// <summary>
+        /// Creates a piece positioned on the given square of the given grid.
+        /// </summary>
+        /// <param name="board">Grid shared by all the pieces of the game.</param>
+        /// <param name="color">Colour of the piece ('W' or 'B').</param>
+        /// <param name="symbol">Symbol of the piece, e.g. "BP1".</param>
+        /// <param name="row">Initial row (0 based).</param>
+        /// <param name="column">Initial column (0 based).</param>
+        public Piece(Piece?[][] board, char color, string symbol, int row, int column) {
+            Board = board;
+            Color = color;
             Symbol = symbol;
             Row = row;
             Column = column;
-            Board = board;
-            Color = color;
-            HasMoved = false; // Inicialmente, a peça não se moveu.
+            Type = symbol.Length > 1 ? symbol[1] : ' ';
+            Index = ParseIndex(symbol);
+            HasMoved = false;
+            SpecialUsed = false;
         }
 
         /// <summary>
-        /// Valida se a peça pode se mover para uma posição específica.
+        /// Reads the numeric part of a symbol (everything after the colour and the type).
         /// </summary>
-        /// <param name="endRow">Linha de destino.</param>
-        /// <param name="endColumn">Coluna de destino.</param>
-        /// <returns>True se o movimento for válido; caso contrário, False.</returns>
+        private static int ParseIndex(string symbol) {
+            int value = 0;
+            for (int i = 2; i < symbol.Length; i++) {
+                if (symbol[i] < '0' || symbol[i] > '9') {
+                    break;
+                }
+                value = value * 10 + (symbol[i] - '0');
+            }
+            return value;
+        }
+
+        /// <summary>
+        /// Checks whether a move target is a pseudo-legal normal move for this piece: the geometry
+        /// of the piece fits, the path is free and the target is empty or holds an opponent piece.
+        /// Check, castling, en passant, promotion and special operations are NOT handled here.
+        /// </summary>
+        /// <param name="endRow">Target row (0 based).</param>
+        /// <param name="endColumn">Target column (0 based).</param>
+        /// <returns>True when the normal move geometry allows the move.</returns>
         public virtual bool CanMove(int endRow, int endColumn) {
-            return false; // Placeholder para validação nas subclasses.
+            return false;
         }
 
         /// <summary>
-        /// Gera todos os movimentos válidos para a peça. Deve ser sobrescrito pelas subclasses.
+        /// Lists every square this piece could move to with a normal move. It is built from
+        /// <see cref="CanMove"/>, so subclasses only have to implement the move geometry.
+        /// King must add castling here in a later stage.
         /// </summary>
-        /// <returns>Lista de coordenadas representando os movimentos válidos.</returns>
-        public virtual List<(int, int)> GetValidMoves() {
-            return new List<(int, int)>();
+        /// <returns>List of (row, column) targets.</returns>
+        public virtual List<(int Row, int Column)> GetValidMoves() {
+            List<(int, int)> moves = new List<(int, int)>();
+            for (int row = 0; row < 8; row++) {
+                for (int column = 0; column < 8; column++) {
+                    if (CanMove(row, column)) {
+                        moves.Add((row, column));
+                    }
+                }
+            }
+            return moves;
         }
 
         /// <summary>
-        /// Move a peça para uma nova posição no tabuleiro.
+        /// Applies a move that was already validated with <see cref="CanMove"/>: clears the origin,
+        /// captures whatever is on the target and updates the position of the piece.
+        /// Special moves (promotion, en passant, castling) are added in a later stage.
         /// </summary>
-        /// <param name="endRow">Linha de destino.</param>
-        /// <param name="endColumn">Coluna de destino.</param>
-        /// <returns>A peça capturada na posição de destino (ou null se não houver).</returns>
-        public Piece Move(int endRow, int endColumn) {
+        /// <param name="endRow">Target row (0 based).</param>
+        /// <param name="endColumn">Target column (0 based).</param>
+        /// <returns>The captured piece, or null when the target was empty.</returns>
+        public Piece? Move(int endRow, int endColumn) {
             if (!CanMove(endRow, endColumn)) {
-                throw new InvalidOperationException("Movimento inválido para esta peça.");
+                throw new InvalidOperationException("Invalid move for this piece.");
             }
 
-            // Remove a peça da posição atual.
             Board[Row][Column] = null;
-
-            // Captura a peça na posição de destino, se existir.
-            Piece target = Board[endRow][endColumn];
-
-            // Move a peça para a nova posição.
+            Piece? captured = Board[endRow][endColumn];
             Board[endRow][endColumn] = this;
-
-            // Atualiza a posição da peça.
             Row = endRow;
             Column = endColumn;
-            HasMoved = true; // Marca que a peça foi movida.
-
-            return target; // Retorna a peça capturada ou null.
+            HasMoved = true;
+            return captured;
         }
 
         /// <summary>
-        /// Verifica se uma posição está dentro dos limites do tabuleiro.
+        /// Checks whether a row and column are inside the 8x8 board.
         /// </summary>
-        /// <param name="row">Linha da posição.</param>
-        /// <param name="column">Coluna da posição.</param>
-        /// <returns>True se estiver dentro dos limites; caso contrário, False.</returns>
         public bool IsWithinBounds(int row, int column) {
             return row >= 0 && row < 8 && column >= 0 && column < 8;
         }
 
         /// <summary>
-        /// Verifica se a peça na posição especificada pertence ao mesmo jogador.
+        /// Checks whether the square holds a piece of the same colour as this one.
         /// </summary>
-        /// <param name="row">Linha da posição.</param>
-        /// <param name="column">Coluna da posição.</param>
-        /// <returns>True se a peça for amiga; caso contrário, False.</returns>
         public bool IsFriendlyPiece(int row, int column) {
-            return Board[row][column] != null && Board[row][column].Color == this.Color;
+            Piece? piece = Board[row][column];
+            return piece != null && piece.Color == Color;
         }
 
         /// <summary>
-        /// Verifica se a peça na posição especificada pertence ao adversário.
+        /// Checks whether the square holds a piece of the opponent's colour.
         /// </summary>
-        /// <param name="row">Linha da posição.</param>
-        /// <param name="column">Coluna da posição.</param>
-        /// <returns>True se a peça for adversária; caso contrário, False.</returns>
         public bool IsOpponentPiece(int row, int column) {
-            return Board[row][column] != null && Board[row][column].Color != this.Color;
+            Piece? piece = Board[row][column];
+            return piece != null && piece.Color != Color;
         }
+
+        // TODO (later stage): special operation of the piece. Pawn moves one square backwards,
+        // rook captures two opponent pieces in a line, horse advances four squares in a straight
+        // line, bishop captures the opponent pawns in the 3x3 area around it, queen swaps with
+        // the king. None of them may capture a king or leave the own king in check.
     }
 }
