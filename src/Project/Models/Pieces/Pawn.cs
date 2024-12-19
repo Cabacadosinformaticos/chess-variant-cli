@@ -1,128 +1,64 @@
 using System;
-using System.Collections.Generic;
 
 namespace Chess.Models.Pieces {
     /// <summary>
-    /// Representa a peça Peão no jogo de xadrez.
+    /// The pawn. White pawns move towards row 1 (decreasing row index), black pawns towards row 8.
     /// </summary>
     public class Pawn : Piece {
-        private bool hasMoved; // Indica se o Peão já se moveu no jogo.
-        private bool hasUsedSpecial; // Indica se o Peão já realizou sua operação especial.
-
         /// <summary>
-        /// Construtor do Peão.
+        /// Creates a pawn placed on the given square.
         /// </summary>
-        /// <param name="board">Tabuleiro onde o Peão está localizado.</param>
-        /// <param name="color">Cor do Peão (Branco ou Preto).</param>
-        /// <param name="symbol">Símbolo que representa o Peão.</param>
-        /// <param name="row">Linha inicial do Peão.</param>
-        /// <param name="column">Coluna inicial do Peão.</param>
-        public Pawn(Piece[][] board, char color, string symbol, int row, int column) : base(board, color, symbol, row, column) {
-            hasMoved = false;
-            hasUsedSpecial = false;
+        /// <param name="board">Grid shared by all the pieces of the game.</param>
+        /// <param name="color">Colour of the pawn ('W' or 'B').</param>
+        /// <param name="symbol">Symbol of the pawn, e.g. "WP3".</param>
+        /// <param name="row">Initial row (0 based).</param>
+        /// <param name="column">Initial column (0 based).</param>
+        public Pawn(Piece?[][] board, char color, string symbol, int row, int column)
+            : base(board, color, symbol, row, column) {
         }
 
         /// <summary>
-        /// Verifica se o movimento proposto é válido para o Peão.
+        /// Normal pawn moves: one square forward to an empty square, two squares forward from the
+        /// starting row when both squares are empty, or one square diagonally forward to capture.
+        /// En passant is NOT handled here, it is added in a later stage.
         /// </summary>
-        /// <param name="endRow">Linha de destino.</param>
-        /// <param name="endColumn">Coluna de destino.</param>
-        /// <returns>True se o movimento for válido; caso contrário, False.</returns>
         public override bool CanMove(int endRow, int endColumn) {
-            // Verifica se o movimento está dentro dos limites do tabuleiro.
             if (!IsWithinBounds(endRow, endColumn)) {
                 return false;
             }
+            if (endRow == Row && endColumn == Column) {
+                return false;
+            }
 
+            // White moves up the board (row index decreases), black moves down.
+            int direction = Color == 'W' ? -1 : 1;
+            int startRow = Color == 'W' ? 6 : 1;
             int rowDelta = endRow - Row;
-            int colDelta = Math.Abs(endColumn - Column);
 
-            if (Color == 'W') {
-                // Movimento normal para frente
-                if (rowDelta == -1 && colDelta == 0 && Board[endRow][endColumn] == null) {
-                    return true;
-                }
-                // Movimento inicial de duas casas
-                if (!hasMoved && rowDelta == -2 && colDelta == 0 && Board[endRow][endColumn] == null && Board[Row - 1][Column] == null) {
-                    return true;
-                }
-                // Captura diagonal
-                if (rowDelta == -1 && colDelta == 1 && IsOpponentPiece(endRow, endColumn)) {
-                    return true;
-                }
-            } else if (Color == 'B') {
-                // Movimento normal para frente
-                if (rowDelta == 1 && colDelta == 0 && Board[endRow][endColumn] == null) {
-                    return true;
-                }
-                // Movimento inicial de duas casas
-                if (!hasMoved && rowDelta == 2 && colDelta == 0 && Board[endRow][endColumn] == null && Board[Row + 1][Column] == null) {
-                    return true;
-                }
-                // Captura diagonal
-                if (rowDelta == 1 && colDelta == 1 && IsOpponentPiece(endRow, endColumn)) {
-                    return true;
-                }
+            // One square forward, only onto an empty square.
+            if (endColumn == Column && rowDelta == direction && Board[endRow][endColumn] == null) {
+                return true;
+            }
+
+            // Two squares forward, only from the starting row and with both squares empty.
+            if (endColumn == Column && rowDelta == 2 * direction && !HasMoved && Row == startRow
+                && Board[Row + direction][Column] == null && Board[endRow][endColumn] == null) {
+                return true;
+            }
+
+            // Diagonal capture of an opponent piece.
+            if (Math.Abs(endColumn - Column) == 1 && rowDelta == direction
+                && IsOpponentPiece(endRow, endColumn)) {
+                return true;
             }
 
             return false;
         }
 
-        /// <summary>
-        /// Realiza a operação especial do Peão, permitindo que ele recue uma casa.
-        /// </summary>
-        public void PerformSpecialOperation() {
-            if (hasUsedSpecial) {
-                throw new InvalidOperationException("O Peão já usou a sua operação especial.");
-            }
+        // TODO (later stage): en passant (capture a pawn that has just moved two squares) and
+        // promotion (a pawn reaching the last row becomes a queen).
 
-            if (Color == 'W') {
-                if (Row + 1 < 8 && Board[Row + 1][Column] == null) {
-                    Row += 1; // Recua uma casa.
-                } else {
-                    throw new InvalidOperationException("Não é possível recuar.");
-                }
-            } else if (Color == 'B') {
-                if (Row - 1 >= 0 && Board[Row - 1][Column] == null) {
-                    Row -= 1; // Recua uma casa.
-                } else {
-                    throw new InvalidOperationException("Não é possível recuar.");
-                }
-            }
-
-            hasUsedSpecial = true; // Marca que a operação especial foi usada.
-        }
-
-        /// <summary>
-        /// Gera todos os movimentos válidos para o Peão a partir da posição atual.
-        /// </summary>
-        /// <returns>Lista de coordenadas representando os movimentos válidos.</returns>
-        public override List<(int, int)> GetValidMoves() {
-            var validMoves = new List<(int, int)>();
-
-            int direction = (Color == 'W') ? -1 : 1; // Define a direção do movimento baseado na cor.
-
-            // Movimento normal
-            if (IsWithinBounds(Row + direction, Column) && Board[Row + direction][Column] == null) {
-                validMoves.Add((Row + direction, Column));
-            }
-
-            // Movimento inicial de duas casas
-            if (!hasMoved && IsWithinBounds(Row + 2 * direction, Column) && Board[Row + direction][Column] == null && Board[Row + 2 * direction][Column] == null) {
-                validMoves.Add((Row + 2 * direction, Column));
-            }
-
-            // Captura diagonal esquerda
-            if (IsWithinBounds(Row + direction, Column - 1) && IsOpponentPiece(Row + direction, Column - 1)) {
-                validMoves.Add((Row + direction, Column - 1));
-            }
-
-            // Captura diagonal direita
-            if (IsWithinBounds(Row + direction, Column + 1) && IsOpponentPiece(Row + direction, Column + 1)) {
-                validMoves.Add((Row + direction, Column + 1));
-            }
-
-            return validMoves;
-        }
+        // TODO (later stage): special operation, once per game: move one square backwards to an
+        // empty square, printing "Peão NomePeça recuou com sucesso.".
     }
 }
