@@ -1,93 +1,65 @@
-using System;
-using System.Collections.Generic;
-
 namespace Chess.Models {
     /// <summary>
-    /// Representa um jogador no jogo de xadrez.
+    /// A registered player: a name and the counters of the games he played.
+    /// The same object is used by the registry and by the running game, so that results
+    /// update the registry directly.
     /// </summary>
     public class Player {
         /// <summary>
-        /// Nome do jogador.
+        /// Name of the player (no spaces).
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
-        /// Cor das peças do jogador ('W' para branco, 'B' para preto).
-        /// </summary>
-        public char Color { get; private set; }
-
-        /// <summary>
-        /// Lista de peças pertencentes ao jogador.
-        /// </summary>
-        public List<Piece> Pieces { get; private set; }
-
-        /// <summary>
-        /// Número de jogos vencidos pelo jogador.
+        /// Number of games won.
         /// </summary>
         public int Wins { get; private set; }
 
         /// <summary>
-        /// Número de jogos perdidos pelo jogador.
-        /// </summary>
-        public int Losses { get; private set; }
-
-        /// <summary>
-        /// Número de jogos empatados pelo jogador.
+        /// Number of games drawn.
         /// </summary>
         public int Draws { get; private set; }
 
         /// <summary>
-        /// Construtor para inicializar um novo jogador.
+        /// Number of games lost.
         /// </summary>
-        /// <param name="name">Nome do jogador.</param>
-        /// <param name="color">Cor das peças do jogador ('W' ou 'B').</param>
-        public Player(string name, char color) {
+        public int Losses { get; private set; }
+
+        /// <summary>
+        /// Number of games played: wins + draws + losses.
+        /// </summary>
+        public int Games => Wins + Draws + Losses;
+
+        /// <summary>
+        /// Creates a player with an empty record.
+        /// </summary>
+        /// <param name="name">Name of the player.</param>
+        public Player(string name) {
             Name = name;
-            Color = color;
-            Pieces = new List<Piece>();
             Wins = 0;
-            Losses = 0;
             Draws = 0;
+            Losses = 0;
         }
 
         /// <summary>
-        /// Adiciona uma peça ao jogador.
-        /// </summary>
-        /// <param name="piece">A peça a ser adicionada.</param>
-        public void AddPiece(Piece piece) {
-            if (piece.Color != this.Color) {
-                throw new InvalidOperationException("A peça não pertence a este jogador.");
-            }
-            Pieces.Add(piece);
-        }
-
-        /// <summary>
-        /// Remove uma peça do jogador.
-        /// </summary>
-        /// <param name="piece">A peça a ser removida.</param>
-        public void RemovePiece(Piece piece) {
-            Pieces.Remove(piece);
-        }
-
-        /// <summary>
-        /// Incrementa o número de vitórias do jogador.
+        /// Registers a win for this player.
         /// </summary>
         public void IncrementWins() {
             Wins++;
         }
 
         /// <summary>
-        /// Incrementa o número de derrotas do jogador.
-        /// </summary>
-        public void IncrementLosses() {
-            Losses++;
-        }
-
-        /// <summary>
-        /// Incrementa o número de empates do jogador.
+        /// Registers a draw for this player.
         /// </summary>
         public void IncrementDraws() {
             Draws++;
+        }
+
+        /// <summary>
+        /// Registers a loss for this player.
+        /// </summary>
+        public void IncrementLosses() {
+            Losses++;
         }
     }
 }
