@@ -140,6 +140,34 @@ namespace Chess.Models {
         }
 
         /// <summary>
+        /// Changes the recorded position of the piece without touching the board or the HasMoved
+        /// flag. It is used by the move simulation of the game controller, which changes the board
+        /// itself, tests the move and then restores both the board and the recorded position.
+        /// </summary>
+        /// <param name="row">New row (0 based).</param>
+        /// <param name="column">New column (0 based).</param>
+        public void SetPosition(int row, int column) {
+            Row = row;
+            Column = column;
+        }
+
+        /// <summary>
+        /// Moves the piece to a new square without checking the chess rules: it clears the origin,
+        /// replaces whatever was on the target and marks the piece as moved. It is used by the
+        /// special moves (castling, en passant, promotion) that <see cref="Move"/> does not accept.
+        /// A captured piece is simply lost, so callers that need it must read the target first.
+        /// </summary>
+        /// <param name="endRow">Target row (0 based).</param>
+        /// <param name="endColumn">Target column (0 based).</param>
+        public void MoveTo(int endRow, int endColumn) {
+            Board[Row][Column] = null;
+            Board[endRow][endColumn] = this;
+            Row = endRow;
+            Column = endColumn;
+            HasMoved = true;
+        }
+
+        /// <summary>
         /// Checks whether a row and column are inside the 8x8 board.
         /// </summary>
         public bool IsWithinBounds(int row, int column) {
