@@ -18,11 +18,25 @@ namespace Chess.Models {
         /// <param name="attackerColor">Colour whose pieces are attacking.</param>
         /// <returns>True when at least one piece of that colour attacks the square.</returns>
         public static bool IsSquareAttacked(Board board, int row, int column, char attackerColor) {
+            return IsSquareAttacked(board.Grid, row, column, attackerColor);
+        }
+
+        /// <summary>
+        /// Tells whether a square is attacked by any piece of the given colour, working directly
+        /// on the grid. Pieces only know the grid they live on, so this overload lets a piece ask
+        /// the same question without a Board object.
+        /// </summary>
+        /// <param name="grid">Grid of the board to inspect.</param>
+        /// <param name="row">Row of the square (0 based).</param>
+        /// <param name="column">Column of the square (0 based).</param>
+        /// <param name="attackerColor">Colour whose pieces are attacking.</param>
+        /// <returns>True when at least one piece of that colour attacks the square.</returns>
+        public static bool IsSquareAttacked(Piece?[][] grid, int row, int column, char attackerColor) {
             for (int pieceRow = 0; pieceRow < 8; pieceRow++) {
                 for (int pieceColumn = 0; pieceColumn < 8; pieceColumn++) {
-                    Piece? piece = board.GetPiece(pieceRow, pieceColumn);
+                    Piece? piece = grid[pieceRow][pieceColumn];
                     if (piece != null && piece.Color == attackerColor
-                        && AttacksSquare(board, piece, row, column)) {
+                        && AttacksSquare(grid, piece, row, column)) {
                         return true;
                     }
                 }
@@ -38,12 +52,23 @@ namespace Chess.Models {
         /// <param name="color">Colour to test ('W' or 'B').</param>
         /// <returns>True when any king of that colour is attacked.</returns>
         public static bool IsColorInCheck(Board board, char color) {
+            return IsColorInCheck(board.Grid, color);
+        }
+
+        /// <summary>
+        /// Tells whether a colour is in check, working directly on the grid. The pieces use this
+        /// overload to test their own king before and after a special operation.
+        /// </summary>
+        /// <param name="grid">Grid of the board to inspect.</param>
+        /// <param name="color">Colour to test ('W' or 'B').</param>
+        /// <returns>True when any king of that colour is attacked.</returns>
+        public static bool IsColorInCheck(Piece?[][] grid, char color) {
             char enemy = EnemyOf(color);
             for (int row = 0; row < 8; row++) {
                 for (int column = 0; column < 8; column++) {
-                    Piece? piece = board.GetPiece(row, column);
+                    Piece? piece = grid[row][column];
                     if (piece != null && piece.Color == color && piece.Type == 'K'
-                        && IsSquareAttacked(board, row, column, enemy)) {
+                        && IsSquareAttacked(grid, row, column, enemy)) {
                         return true;
                     }
                 }
@@ -81,7 +106,7 @@ namespace Chess.Models {
         /// Tells whether a piece attacks a square, using the capture geometry of its type. The
         /// square may be empty or hold any piece: this is not a legal move test.
         /// </summary>
-        private static bool AttacksSquare(Board board, Piece piece, int row, int column) {
+        private static bool AttacksSquare(Piece?[][] grid, Piece piece, int row, int column) {
             if (row == piece.Row && column == piece.Column) {
                 return false;
             }
@@ -90,12 +115,12 @@ namespace Chess.Models {
                 case 'P':
                     return IsPawnAttack(piece, row, column);
                 case 'R':
-                    return IsStraight(piece, row, column) && IsPathClear(board, piece, row, column);
+                    return IsStraight(piece, row, column) && IsPathClear(grid, piece, row, column);
                 case 'B':
-                    return IsDiagonal(piece, row, column) && IsPathClear(board, piece, row, column);
+                    return IsDiagonal(piece, row, column) && IsPathClear(grid, piece, row, column);
                 case 'Q':
                     return (IsStraight(piece, row, column) || IsDiagonal(piece, row, column))
-                        && IsPathClear(board, piece, row, column);
+                        && IsPathClear(grid, piece, row, column);
                 case 'H':
                     return IsHorseMove(piece, row, column);
                 case 'K':
@@ -141,14 +166,14 @@ namespace Chess.Models {
         /// Tells whether every square strictly between a piece and a target square is empty. The
         /// square of the piece and the target square itself are not checked.
         /// </summary>
-        private static bool IsPathClear(Board board, Piece piece, int row, int column) {
+        private static bool IsPathClear(Piece?[][] grid, Piece piece, int row, int column) {
             int rowStep = Math.Sign(row - piece.Row);
             int columnStep = Math.Sign(column - piece.Column);
 
             int currentRow = piece.Row + rowStep;
             int currentColumn = piece.Column + columnStep;
             while (currentRow != row || currentColumn != column) {
-                if (board.GetPiece(currentRow, currentColumn) != null) {
+                if (grid[currentRow][currentColumn] != null) {
                     return false;
                 }
                 currentRow += rowStep;

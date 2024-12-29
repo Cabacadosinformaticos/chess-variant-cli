@@ -152,6 +152,29 @@ namespace Chess.Models {
         }
 
         /// <summary>
+        /// Marks the piece as moved without changing its position. The special operation of the
+        /// queen uses it on the two pieces that swap places.
+        /// </summary>
+        public void MarkAsMoved() {
+            HasMoved = true;
+        }
+
+        /// <summary>
+        /// Puts back a saved state of the piece: its position and its two movement flags. The game
+        /// controller uses it to undo a special operation that would leave the own king in check.
+        /// </summary>
+        /// <param name="row">Row to put back (0 based).</param>
+        /// <param name="column">Column to put back (0 based).</param>
+        /// <param name="hasMoved">Value of HasMoved to put back.</param>
+        /// <param name="specialUsed">Value of SpecialUsed to put back.</param>
+        public void RestoreState(int row, int column, bool hasMoved, bool specialUsed) {
+            Row = row;
+            Column = column;
+            HasMoved = hasMoved;
+            SpecialUsed = specialUsed;
+        }
+
+        /// <summary>
         /// Moves the piece to a new square without checking the chess rules: it clears the origin,
         /// replaces whatever was on the target and marks the piece as moved. It is used by the
         /// special moves (castling, en passant, promotion) that <see cref="Move"/> does not accept.
@@ -190,9 +213,36 @@ namespace Chess.Models {
             return piece != null && piece.Color != Color;
         }
 
-        // TODO (later stage): special operation of the piece. Pawn moves one square backwards,
-        // rook captures two opponent pieces in a line, horse advances four squares in a straight
-        // line, bishop captures the opponent pawns in the 3x3 area around it, queen swaps with
-        // the king. None of them may capture a king or leave the own king in check.
+        /// <summary>
+        /// True when the special operation of this piece uses a final position in the instruction.
+        /// The rook, the horse and the queen need one; the pawn computes its own target and the
+        /// bishop ignores it. The king has no special operation at all.
+        /// </summary>
+        public virtual bool SpecialOperationNeedsEndPosition => false;
+
+        /// <summary>
+        /// Checks whether this piece may use its special operation towards a square, following
+        /// only the rules of the piece itself. The board is left unchanged. The game controller
+        /// still refuses an operation that would leave the own king in check.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based), used by the pieces that need it.</param>
+        /// <param name="endColumn">Final column (0 based), used by the pieces that need it.</param>
+        /// <returns>True when the rules of the piece allow the operation.</returns>
+        public virtual bool CanUseSpecialOperation(int endRow, int endColumn) {
+            return false;
+        }
+
+        /// <summary>
+        /// Applies the special operation, which must have been accepted by
+        /// <see cref="CanUseSpecialOperation"/> first, and returns the success line. A piece whose
+        /// operation can only be used once sets its <see cref="SpecialUsed"/> flag here. The base
+        /// piece has no operation, so it never reaches this method with a true answer.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based).</param>
+        /// <param name="endColumn">Final column (0 based).</param>
+        /// <returns>The success line of the operation.</returns>
+        public virtual string UseSpecialOperation(int endRow, int endColumn) {
+            return "Movimento inválido.";
+        }
     }
 }

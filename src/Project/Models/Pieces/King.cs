@@ -39,6 +39,7 @@ namespace Chess.Models.Pieces {
         // empty and the king is not in check, does not cross and does not land on an attacked
         // square; the rook jumps to the square the king crossed.
 
-        // TODO (later stage): the king has no special operation, the answer is "Movimento inválido.".
+        // The king has no special operation: CanUseSpecialOperation keeps its base answer (false),
+        // so the game controller answers "Movimento inválido." for an "OS" on a king.
     }
 }
