@@ -53,8 +53,86 @@ namespace Chess.Models.Pieces {
             return true;
         }
 
-        // TODO (later stage): special operation, once per game: capture two opponent pieces in a
-        // straight line, the first one adjacent to the rook and the second one on the target
-        // square, printing "Torre NomePeça capturou duas peças com sucesso.".
+        /// <summary>
+        /// The special operation of the rook needs a final position: the square of the second
+        /// captured piece.
+        /// </summary>
+        public override bool SpecialOperationNeedsEndPosition => true;
+
+        /// <summary>
+        /// Special operation, once per game: the rook captures two opponent pieces in a straight
+        /// line. The first piece has to be on the square next to the rook, every square after it
+        /// has to be empty and the final square has to hold the second piece. A king is never a
+        /// valid target of the operation.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based).</param>
+        /// <param name="endColumn">Final column (0 based).</param>
+        /// <returns>True when the rook may capture the two pieces.</returns>
+        public override bool CanUseSpecialOperation(int endRow, int endColumn) {
+            if (SpecialUsed) {
+                return false;
+            }
+            if (!IsWithinBounds(endRow, endColumn)) {
+                return false;
+            }
+
+            // The final square has to be on the same row or column, and at least two squares
+            // away so that the two captured pieces fit in between.
+            if (Row != endRow && Column != endColumn) {
+                return false;
+            }
+            if (Math.Abs(endRow - Row) + Math.Abs(endColumn - Column) < 2) {
+                return false;
+            }
+
+            int rowStep = Math.Sign(endRow - Row);
+            int columnStep = Math.Sign(endColumn - Column);
+
+            // The piece next to the rook is the first one captured.
+            if (!IsCapturablePiece(Board[Row + rowStep][Column + columnStep])) {
+                return false;
+            }
+
+            // Every square between the first piece and the final square has to be empty.
+            int row = Row + 2 * rowStep;
+            int column = Column + 2 * columnStep;
+            while (row != endRow || column != endColumn) {
+                if (Board[row][column] != null) {
+                    return false;
+                }
+                row += rowStep;
+                column += columnStep;
+            }
+
+            // The final square holds the second captured piece.
+            return IsCapturablePiece(Board[endRow][endColumn]);
+        }
+
+        /// <summary>
+        /// Tells whether a piece may be captured by the special operation: it has to be an
+        /// opponent piece and it may not be a king.
+        /// </summary>
+        /// <param name="piece">Piece to test, or null for an empty square.</param>
+        /// <returns>True when the piece can be captured.</returns>
+        private bool IsCapturablePiece(Piece? piece) {
+            return piece != null && piece.Color != Color && piece.Type != 'K';
+        }
+
+        /// <summary>
+        /// Applies the special operation of the rook: removes the adjacent piece, lands on the
+        /// final square (removing the second piece) and uses up its single operation.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based).</param>
+        /// <param name="endColumn">Final column (0 based).</param>
+        /// <returns>The success line of the operation.</returns>
+        public override string UseSpecialOperation(int endRow, int endColumn) {
+            int rowStep = Math.Sign(endRow - Row);
+            int columnStep = Math.Sign(endColumn - Column);
+
+            Board[Row + rowStep][Column + columnStep] = null; // Takes the first captured piece away.
+            MoveTo(endRow, endColumn); // Lands on the final square, replacing the second piece.
+            SpecialUsed = true;
+            return $"Torre {Symbol} capturou duas peças com sucesso.";
+        }
     }
 }
