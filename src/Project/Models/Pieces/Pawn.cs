@@ -58,7 +58,40 @@ namespace Chess.Models.Pieces {
         // TODO (later stage): en passant (capture a pawn that has just moved two squares) and
         // promotion (a pawn reaching the last row becomes a queen).
 
-        // TODO (later stage): special operation, once per game: move one square backwards to an
-        // empty square, printing "Peão NomePeça recuou com sucesso.".
+        /// <summary>
+        /// Special operation, once per game: the pawn steps one square backwards, towards its own
+        /// side, and only onto an empty square. The pawn of a continued game starts with the
+        /// operation unused.
+        /// </summary>
+        /// <param name="endRow">Final row of the instruction, which the pawn ignores.</param>
+        /// <param name="endColumn">Final column of the instruction, which the pawn ignores.</param>
+        /// <returns>True when the pawn may step back.</returns>
+        public override bool CanUseSpecialOperation(int endRow, int endColumn) {
+            if (SpecialUsed) {
+                return false;
+            }
+            return Board[BackRow()][Column] == null;
+        }
+
+        /// <summary>
+        /// Applies the special operation of the pawn: one square backwards, using up its single
+        /// operation. The target square is empty, so nothing is captured.
+        /// </summary>
+        /// <param name="endRow">Final row of the instruction, which the pawn ignores.</param>
+        /// <param name="endColumn">Final column of the instruction, which the pawn ignores.</param>
+        /// <returns>The success line of the operation.</returns>
+        public override string UseSpecialOperation(int endRow, int endColumn) {
+            MoveTo(BackRow(), Column);
+            SpecialUsed = true;
+            return $"Peão {Symbol} recuou com sucesso.";
+        }
+
+        /// <summary>
+        /// Returns the row one square backwards: the pawn moves towards its own side, which is
+        /// the opposite of its normal direction.
+        /// </summary>
+        private int BackRow() {
+            return Row + (Color == 'W' ? 1 : -1);
+        }
     }
 }
