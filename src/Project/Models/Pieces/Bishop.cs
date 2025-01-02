@@ -51,8 +51,57 @@ namespace Chess.Models.Pieces {
             return true;
         }
 
-        // TODO (later stage): special operation, once per game: capture every opponent PAWN in the
-        // 3x3 square centred on the bishop; the bishop does not move. It is only valid when at
-        // least one pawn is captured, and prints "Bispo NomePeça capturou N peões.".
+        /// <summary>
+        /// Special operation, once per game: the bishop captures every opponent PAWN in the 3x3
+        /// square centred on it and does not move. Without at least one such pawn the operation is
+        /// not allowed and its single use is not consumed. A final position is not needed and, if
+        /// the instruction gives one, it is ignored.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based), ignored by this piece.</param>
+        /// <param name="endColumn">Final column (0 based), ignored by this piece.</param>
+        /// <returns>True when there is at least one opponent pawn to capture.</returns>
+        public override bool CanUseSpecialOperation(int endRow, int endColumn) {
+            return !SpecialUsed && CapturePawnsAround(false) > 0;
+        }
+
+        /// <summary>
+        /// Applies the special operation of the bishop: removes the opponent pawns around it and
+        /// uses up its single operation. The bishop stays where it is.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based), ignored by this piece.</param>
+        /// <param name="endColumn">Final column (0 based), ignored by this piece.</param>
+        /// <returns>The success line of the operation, with the number of pawns captured.</returns>
+        public override string UseSpecialOperation(int endRow, int endColumn) {
+            int captured = CapturePawnsAround(true);
+            SpecialUsed = true;
+            return $"Bispo {Symbol} capturou {captured} peões.";
+        }
+
+        /// <summary>
+        /// Counts the opponent pawns in the 3x3 square around the bishop and, when asked, removes
+        /// them from the board. Own pieces, other types of piece and the bishop's own square are
+        /// left alone.
+        /// </summary>
+        /// <param name="capture">True to remove the pawns, false only to count them.</param>
+        /// <returns>Number of opponent pawns in that square.</returns>
+        private int CapturePawnsAround(bool capture) {
+            int count = 0;
+            for (int row = Row - 1; row <= Row + 1; row++) {
+                for (int column = Column - 1; column <= Column + 1; column++) {
+                    if ((row == Row && column == Column) || !IsWithinBounds(row, column)) {
+                        continue;
+                    }
+
+                    Piece? piece = Board[row][column];
+                    if (piece != null && piece.Color != Color && piece.Type == 'P') {
+                        if (capture) {
+                            Board[row][column] = null;
+                        }
+                        count++;
+                    }
+                }
+            }
+            return count;
+        }
     }
 }

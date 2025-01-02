@@ -56,8 +56,56 @@ namespace Chess.Models.Pieces {
             return true;
         }
 
-        // TODO (later stage): special operation, any number of times: swap places with a king of
-        // the same colour, only when the king is not in check before or after the swap. Prints
-        // "Rainha trocou de posição com o rei.".
+        /// <summary>
+        /// The special operation of the queen needs a final position: the square of the king she
+        /// swaps with.
+        /// </summary>
+        public override bool SpecialOperationNeedsEndPosition => true;
+
+        /// <summary>
+        /// Special operation, any number of times: the queen swaps places with a king of the same
+        /// colour on the final square. It is only allowed when that king is not in check before
+        /// the swap; the game controller still refuses a swap that would leave the own king in
+        /// check afterwards.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based).</param>
+        /// <param name="endColumn">Final column (0 based).</param>
+        /// <returns>True when the queen may swap with the king.</returns>
+        public override bool CanUseSpecialOperation(int endRow, int endColumn) {
+            if (!IsWithinBounds(endRow, endColumn)) {
+                return false;
+            }
+
+            // The final square has to hold a king of the same colour.
+            Piece? target = Board[endRow][endColumn];
+            if (target == null || target.Type != 'K' || target.Color != Color) {
+                return false;
+            }
+
+            // The king may not be in check when the swap starts.
+            return !MoveRules.IsColorInCheck(Board, Color);
+        }
+
+        /// <summary>
+        /// Applies the special operation of the queen: queen and king change squares, on the board
+        /// and in their recorded positions. Both count as moved, so a king that swapped can no
+        /// longer castle. The queen keeps her operation for the rest of the game.
+        /// </summary>
+        /// <param name="endRow">Final row (0 based).</param>
+        /// <param name="endColumn">Final column (0 based).</param>
+        /// <returns>The success line of the operation.</returns>
+        public override string UseSpecialOperation(int endRow, int endColumn) {
+            Piece king = Board[endRow][endColumn]!;
+            int queenRow = Row;
+            int queenColumn = Column;
+
+            Board[queenRow][queenColumn] = king;
+            Board[endRow][endColumn] = this;
+            king.SetPosition(queenRow, queenColumn);
+            SetPosition(endRow, endColumn);
+            king.MarkAsMoved();
+            MarkAsMoved();
+            return "Rainha trocou de posição com o rei.";
+        }
     }
 }
