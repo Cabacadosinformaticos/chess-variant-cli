@@ -171,8 +171,7 @@ namespace Chess.Controllers {
             bool isPromotion = piece.Type == 'P' && end.Row == (piece.Color == 'W' ? 0 : 7);
 
             // A turn is passing, so the previous en passant opportunity is gone.
-            enPassantTarget = null;
-            enPassantPawn = null;
+            ClearEnPassant();
 
             Piece? captured;
             if (isEnPassant) {
@@ -201,13 +200,17 @@ namespace Chess.Controllers {
             }
 
             // The turn passes to the opponent, who may now be in check or have no move at all.
-            CurrentTurn = CurrentTurn == 'W' ? 'B' : 'W';
+            SwitchTurn();
             return DescribeMoveResult(mover, piece.Symbol, captured, isPromotion, isCastling, isEnPassant);
         }
 
         /// <summary>
-        /// Validates the part of a special operation that does not depend on the chess rules and
-        /// then performs it. The operations themselves are added in a later stage.
+        /// Performs the special operation of a piece: a pawn steps one square backwards, a rook
+        /// captures two opponent pieces in a straight line, a horse jumps four squares, a bishop
+        /// captures the opponent pawns around it and a queen swaps places with its king. The
+        /// operation is refused when the rules of the piece do not allow it or when it would leave
+        /// the mover's own king in check. On success the turn passes and, as after a normal move,
+        /// a checkmate or a check adds a second line to the answer.
         /// </summary>
         /// <param name="playerName">Name of the player asking for the operation.</param>
         /// <param name="startToken">Position token of the piece, e.g. "E2".</param>
@@ -226,16 +229,40 @@ namespace Chess.Controllers {
             if (!Position.TryParse(startToken, out Position start)) {
                 return "Posição inválida.";
             }
-            if (Board.GetPiece(start.Row, start.Column) == null) {
+
+            Piece? piece = Board.GetPiece(start.Row, start.Column);
+            if (piece == null) {
                 return "Não existe peça na posição inicial.";
             }
-            if (endToken != null && !Position.TryParse(endToken, out _)) {
+
+            // A token that is given always has to be a valid position, and the pieces whose
+            // operation uses it may not be called without one.
+            bool hasEnd = endToken != null;
+            Position end = default;
+            if (hasEnd && !Position.TryParse(endToken, out end)) {
+                return "Posição final inválida.";
+            }
+            if (!hasEnd && piece.SpecialOperationNeedsEndPosition) {
                 return "Posição final inválida.";
             }
 
-            // TODO (later stage): check whether the piece needs an end position, then perform the
-            // special operation of the piece (pawn, rook, horse, bishop or queen).
-            return "Funcionalidade não implementada.";
+            if (piece.Color != CurrentTurn) {
+                return "Movimento inválido."; // A player can only use his own pieces.
+            }
+            if (!piece.CanUseSpecialOperation(end.Row, end.Column)) {
+                return "Movimento inválido.";
+            }
+
+            Player mover = CurrentPlayer();
+            string? line = TryPerformSpecialOperation(piece, end.Row, end.Column);
+            if (line == null) {
+                return "Movimento inválido."; // The operation would leave the own king in check.
+            }
+
+            // A turn is passing, so the previous en passant opportunity is gone.
+            ClearEnPassant();
+            SwitchTurn();
+            return AddCheckResult(mover, line);
         }
 
         /// <summary>
@@ -442,30 +469,97 @@ namespace Chess.Controllers {
         /// </summary>
         private string DescribeMoveResult(Player mover, string pieceSymbol, Piece? captured,
             bool isPromotion, bool isCastling, bool isEnPassant) {
-            Board board = Board!;
-            char opponentColor = CurrentTurn;
-
-            if (!MoveRules.HasKing(board, opponentColor)) {
-                return EndWithCheckmate(mover); // A missing king is also a loss.
-            }
-
-            bool opponentInCheck = MoveRules.IsColorInCheck(board, opponentColor);
-            bool opponentHasMove = HasAnyLegalMove(opponentColor);
-            if (opponentInCheck && !opponentHasMove) {
-                return EndWithCheckmate(mover);
-            }
-            if (opponentInCheck) {
-                return "Check.";
+            string? ending = DescribeCheckAndCheckmate(mover);
+            if (ending != null) {
+                return ending;
             }
 
             string line = DescribeNormalMove(pieceSymbol, captured, isPromotion, isCastling, isEnPassant);
-            if (!opponentHasMove) {
+            if (!HasAnyLegalMove(CurrentTurn)) {
                 // Stalemate: the move is still reported, but the game ends as a draw.
                 WhitePlayer!.IncrementDraws();
                 BlackPlayer!.IncrementDraws();
                 GameInProgress = false;
             }
             return line;
+        }
+
+        /// <summary>
+        /// Looks at the player who has just received the turn: he has no king, or is in check
+        /// without any legal move, means checkmate and the game ends in favour of the mover; being
+        /// only in check means "Check.". Returns null while there is nothing special to report.
+        /// </summary>
+        /// <param name="mover">Player who made the move or the operation.</param>
+        /// <returns>The extra line, or null when the opponent is not in check.</returns>
+        private string? DescribeCheckAndCheckmate(Player mover) {
+            Board board = Board!;
+            char opponentColor = CurrentTurn;
+
+            if (!MoveRules.HasKing(board, opponentColor)) {
+                return EndWithCheckmate(mover); // A missing king is also a loss.
+            }
+            if (!MoveRules.IsColorInCheck(board, opponentColor)) {
+                return null;
+            }
+            if (!HasAnyLegalMove(opponentColor)) {
+                return EndWithCheckmate(mover);
+            }
+            return "Check.";
+        }
+
+        /// <summary>
+        /// Adds the second line that a successful special operation may need: "Checkmate. Nome
+        /// venceu." (which also ends the game) when the opponent has no answer, or "Check." when
+        /// he is only in check.
+        /// </summary>
+        /// <param name="mover">Player who used the operation.</param>
+        /// <param name="firstLine">Success line of the operation.</param>
+        /// <returns>The answer, with a second line when there is one.</returns>
+        private string AddCheckResult(Player mover, string firstLine) {
+            string? checkLine = DescribeCheckAndCheckmate(mover);
+            return checkLine == null ? firstLine : firstLine + "\n" + checkLine;
+        }
+
+        /// <summary>
+        /// Forgets the en passant opportunity of the last move, because a turn is passing.
+        /// </summary>
+        private void ClearEnPassant() {
+            enPassantTarget = null;
+            enPassantPawn = null;
+        }
+
+        /// <summary>
+        /// Gives the turn to the other player.
+        /// </summary>
+        private void SwitchTurn() {
+            CurrentTurn = CurrentTurn == 'W' ? 'B' : 'W';
+        }
+
+        /// <summary>
+        /// Performs a special operation that the rules of the piece already accepted, but only
+        /// when the operation does not leave the mover's own king attacked. The operation is
+        /// applied, tested and undone when the king would be in check, so a refused operation
+        /// leaves the board and the flags of the piece exactly as they were.
+        /// </summary>
+        /// <param name="piece">Piece using the operation.</param>
+        /// <param name="endRow">Final row (0 based).</param>
+        /// <param name="endColumn">Final column (0 based).</param>
+        /// <returns>The success line, or null when the operation had to be undone.</returns>
+        private string? TryPerformSpecialOperation(Piece piece, int endRow, int endColumn) {
+            Board board = Board!;
+            if (!MoveRules.HasKing(board, piece.Color)) {
+                // Without a king there is nothing to check, so the operation is always accepted.
+                return piece.UseSpecialOperation(endRow, endColumn);
+            }
+
+            BoardBackup backup = new BoardBackup(board);
+            string line = piece.UseSpecialOperation(endRow, endColumn);
+            if (!MoveRules.IsColorInCheck(board, piece.Color)) {
+                return line;
+            }
+
+            backup.Restore(board);
+            return null;
         }
 
         /// <summary>
@@ -573,6 +667,82 @@ namespace Chess.Controllers {
         /// </summary>
         private Player CurrentPlayer() {
             return CurrentTurn == 'W' ? WhitePlayer! : BlackPlayer!;
+        }
+
+        /// <summary>
+        /// Copy of everything a special operation can change: the squares of the board and the
+        /// state of every piece. It is taken before an operation is applied and used to undo it
+        /// when the operation would leave the mover's own king in check.
+        /// </summary>
+        private sealed class BoardBackup {
+            private readonly Piece?[][] grid;
+            private readonly List<PieceState> pieces;
+
+            /// <summary>
+            /// Copies the squares and the state of the pieces of a board.
+            /// </summary>
+            /// <param name="board">Board to copy.</param>
+            public BoardBackup(Board board) {
+                grid = new Piece?[8][];
+                pieces = new List<PieceState>();
+                for (int row = 0; row < 8; row++) {
+                    grid[row] = new Piece?[8];
+                    for (int column = 0; column < 8; column++) {
+                        Piece? piece = board.Grid[row][column];
+                        grid[row][column] = piece;
+                        if (piece != null) {
+                            pieces.Add(new PieceState(piece));
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Puts the saved squares and piece states back on the board.
+            /// </summary>
+            /// <param name="board">Board to restore.</param>
+            public void Restore(Board board) {
+                for (int row = 0; row < 8; row++) {
+                    for (int column = 0; column < 8; column++) {
+                        board.Grid[row][column] = grid[row][column];
+                    }
+                }
+                foreach (PieceState state in pieces) {
+                    state.Restore();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Saved state of one piece: where it is and which of its flags are set. The game
+        /// controller stores it before simulating a special operation, so that the operation can
+        /// be undone without leaving any trace.
+        /// </summary>
+        private readonly struct PieceState {
+            private readonly Piece piece;
+            private readonly int row;
+            private readonly int column;
+            private readonly bool hasMoved;
+            private readonly bool specialUsed;
+
+            /// <summary>
+            /// Saves the current state of a piece.
+            /// </summary>
+            /// <param name="piece">Piece to save.</param>
+            public PieceState(Piece piece) {
+                this.piece = piece;
+                row = piece.Row;
+                column = piece.Column;
+                hasMoved = piece.HasMoved;
+                specialUsed = piece.SpecialUsed;
+            }
+
+            /// <summary>
+            /// Puts the saved position and flags back into the piece.
+            /// </summary>
+            public void Restore() {
+                piece.RestoreState(row, column, hasMoved, specialUsed);
+            }
         }
 
         // TODO (later stage): save and load (G and L), through a PersistenceController class.
