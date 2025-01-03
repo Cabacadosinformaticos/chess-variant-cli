@@ -76,10 +76,15 @@ namespace Chess.Models {
         }
 
         /// <summary>
-        /// Builds a piece from a cell of a continued game, or null when the text is not a valid
-        /// symbol. Pieces loaded this way start with HasMoved and SpecialUsed false.
+        /// Builds a piece of the right type from a symbol, or null when the text is not a valid
+        /// symbol. It is used by a continued game and by the loading of a save file; pieces built
+        /// this way start with HasMoved and SpecialUsed false and are placed on the given square.
         /// </summary>
-        private Piece? CreatePiece(string text, int row, int column) {
+        /// <param name="text">Symbol of the piece, e.g. "WP3".</param>
+        /// <param name="row">Row where the piece is created (0 based).</param>
+        /// <param name="column">Column where the piece is created (0 based).</param>
+        /// <returns>The new piece, or null when the text is not a valid symbol.</returns>
+        public Piece? CreatePiece(string text, int row, int column) {
             if (!TryParseSymbol(text, out char color, out char type, out _)) {
                 return null;
             }

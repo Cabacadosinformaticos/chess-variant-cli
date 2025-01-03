@@ -42,6 +42,19 @@ namespace Chess.Models {
         }
 
         /// <summary>
+        /// Puts the three counters back to values read from a save file. It is used only when a
+        /// file replaces the whole registry.
+        /// </summary>
+        /// <param name="wins">Number of games won.</param>
+        /// <param name="draws">Number of games drawn.</param>
+        /// <param name="losses">Number of games lost.</param>
+        public void RestoreStats(int wins, int draws, int losses) {
+            Wins = wins;
+            Draws = draws;
+            Losses = losses;
+        }
+
+        /// <summary>
         /// Registers a win for this player.
         /// </summary>
         public void IncrementWins() {

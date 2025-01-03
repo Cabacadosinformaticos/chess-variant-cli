@@ -18,6 +18,24 @@ namespace Chess.Controllers {
         }
 
         /// <summary>
+        /// The registered players, in registration order. The persistence controller uses it to
+        /// export the registry to a file.
+        /// </summary>
+        public IReadOnlyList<Player> Players => players;
+
+        /// <summary>
+        /// Empties the registry and puts the given players in it. It is used when a save file
+        /// replaces all the existing information.
+        /// </summary>
+        /// <param name="newPlayers">Players that become the whole registry.</param>
+        public void ReplacePlayers(IReadOnlyList<Player> newPlayers) {
+            players.Clear();
+            foreach (Player player in newPlayers) {
+                players.Add(player);
+            }
+        }
+
+        /// <summary>
         /// Registers a new player, unless a player with the same name already exists.
         /// </summary>
         /// <param name="playerName">Name of the player.</param>
