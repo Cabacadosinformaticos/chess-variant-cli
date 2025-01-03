@@ -43,6 +43,19 @@ namespace Chess.Controllers {
         public bool GameInProgress { get; private set; }
 
         /// <summary>
+        /// Square the double stepped pawn of the last move skipped, or null when the last move did
+        /// not create an en passant opportunity. The persistence controller uses it to save the
+        /// game in progress.
+        /// </summary>
+        public Position? EnPassantTarget => enPassantTarget;
+
+        /// <summary>
+        /// Pawn that has just stepped two squares and may be captured en passant, or null when
+        /// there is no such pawn. The persistence controller uses it to save the game in progress.
+        /// </summary>
+        public Piece? EnPassantPawn => enPassantPawn;
+
+        /// <summary>
         /// Creates a game controller that looks players up in the given registry.
         /// </summary>
         public GameController(PlayerController playerController) {
@@ -109,6 +122,38 @@ namespace Chess.Controllers {
             enPassantTarget = null;
             enPassantPawn = null;
             return "Jogo iniciado com sucesso.";
+        }
+
+        /// <summary>
+        /// Replaces the game in progress with a game read from a save file. The two players have
+        /// to be the registry's own objects, so that later results update the registry.
+        /// </summary>
+        /// <param name="whitePlayer">Player with the white pieces.</param>
+        /// <param name="blackPlayer">Player with the black pieces.</param>
+        /// <param name="board">Board of the loaded game.</param>
+        /// <param name="turn">Colour that has to play, 'W' or 'B'.</param>
+        /// <param name="enPassantTarget">Skipped square of the en passant opportunity, or null.</param>
+        /// <param name="enPassantPawn">Pawn that may be captured en passant, or null.</param>
+        public void RestoreGame(Player whitePlayer, Player blackPlayer, Board board, char turn,
+                Position? enPassantTarget, Piece? enPassantPawn) {
+            WhitePlayer = whitePlayer;
+            BlackPlayer = blackPlayer;
+            Board = board;
+            CurrentTurn = turn;
+            GameInProgress = true;
+            this.enPassantTarget = enPassantTarget;
+            this.enPassantPawn = enPassantPawn;
+        }
+
+        /// <summary>
+        /// Forgets the game in progress. It is used when a loaded save file has no game.
+        /// </summary>
+        public void ClearGame() {
+            WhitePlayer = null;
+            BlackPlayer = null;
+            Board = null;
+            GameInProgress = false;
+            ClearEnPassant();
         }
 
         /// <summary>
@@ -744,7 +789,5 @@ namespace Chess.Controllers {
                 piece.RestoreState(row, column, hasMoved, specialUsed);
             }
         }
-
-        // TODO (later stage): save and load (G and L), through a PersistenceController class.
     }
 }

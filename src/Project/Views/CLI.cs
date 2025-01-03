@@ -10,6 +10,7 @@ namespace Chess.Views {
     public class CLI {
         private readonly PlayerController playerController;
         private readonly GameController gameController;
+        private readonly PersistenceController persistenceController;
 
         /// <summary>
         /// Creates the view and the controllers it uses.
@@ -17,6 +18,7 @@ namespace Chess.Views {
         public CLI() {
             playerController = new PlayerController();
             gameController = new GameController(playerController);
+            persistenceController = new PersistenceController(playerController, gameController);
         }
 
         /// <summary>
@@ -116,13 +118,19 @@ namespace Chess.Views {
                     break;
 
                 case "G":
-                    // TODO (later stage): write the registry and the game to tokens[1].
-                    WriteLine(tokens.Length == 2 ? "Funcionalidade não implementada." : "Instrução inválida.");
+                    if (tokens.Length == 2) {
+                        WriteLine(persistenceController.Save(tokens[1]));
+                    } else {
+                        WriteLine("Instrução inválida.");
+                    }
                     break;
 
                 case "L":
-                    // TODO (later stage): read the registry and the game from tokens[1].
-                    WriteLine(tokens.Length == 2 ? "Funcionalidade não implementada." : "Instrução inválida.");
+                    if (tokens.Length == 2) {
+                        WriteLine(persistenceController.Load(tokens[1]));
+                    } else {
+                        WriteLine("Instrução inválida.");
+                    }
                     break;
 
                 default:
