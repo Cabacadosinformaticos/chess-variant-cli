@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Chess.Models;
 
@@ -46,7 +47,7 @@ namespace Chess.Controllers {
 
         /// <summary>
         /// Lists the registered players, sorted by number of wins (descending) and then by name
-        /// (ordinal comparison). One line per player: name, games, wins, draws, losses.
+        /// in the invariant culture order. One line per player: name, games, wins, draws, losses.
         /// </summary>
         /// <returns>The lines of the list, or the error message when there are no players.</returns>
         public string ListPlayers() {
@@ -66,14 +67,16 @@ namespace Chess.Controllers {
         }
 
         /// <summary>
-        /// Orders two players for the listing: more wins first, then name in ordinal order.
+        /// Orders two players for the listing: more wins first, then name in the invariant culture
+        /// order, so that the list is the same on every machine and reads as human alphabetical
+        /// order.
         /// </summary>
         private static int ComparePlayers(Player first, Player second) {
             int byWins = second.Wins.CompareTo(first.Wins);
             if (byWins != 0) {
                 return byWins;
             }
-            return string.CompareOrdinal(first.Name, second.Name);
+            return StringComparer.InvariantCulture.Compare(first.Name, second.Name);
         }
     }
 }
