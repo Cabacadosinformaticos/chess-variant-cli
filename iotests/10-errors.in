@@ -1,0 +1,52 @@
+MP Ana A1 A2
+OS Ana A1
+DJ
+D Ana
+L ficheiro-inexistente.txt
+G naoexiste/sub/f.txt
+RJ Ana
+RJ Ana
+LJ
+IJ Novo Ana Bruno
+RJ Bruno
+IJ Novo Ana Bruno
+MP Carlos E7 E5
+MP Bruno E2 E4
+MP Ana Z9 E5
+MP Ana A1 A2
+OS Bruno E2
+OS Ana Z9
+OS Ana E5
+OS Ana E7
+OS Ana A8
+OS Ana E8
+OS Ana E7 F7
+OS Ana E7 Z9
+IJ Continuação Ana Bruno
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+MP Ana E7 E5
+MP Ana E5 E4
+D Carlos
+D Ana
+LJ
+RJ
+RJ Ana Bruno
+LJ Ana
+MP
+MP Ana A1
+OS
+OS Ana A1 A2 B3
+D
+G
+L
+XYZ
+XJ X
+IJ Novo
+

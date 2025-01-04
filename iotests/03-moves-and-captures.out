@@ -1,0 +1,31 @@
+Jogador registado com sucesso.
+Jogador registado com sucesso.
+Jogador registado com sucesso.
+Jogo iniciado com sucesso.
+Não é a vez do jogador.
+Posição inválida.
+Posição inválida.
+Não existe peça na posição inicial.
+Movimento inválido.
+Movimento inválido.
+Jogador não participa no jogo em curso.
+WP5 movida com sucesso.
+Não é a vez do jogador.
+BP5 movida com sucesso.
+Não existe peça na posição inicial.
+WP4 movida com sucesso.
+BP4 movida com sucesso.
+Movimento inválido.
+Peça BP5 capturada.
+Movimento inválido.
+Não existe peça na posição inicial.
+    A    B    C    D    E    F    G    H
+1  BR1  BH1  BB1  BQ1  BK1  BB2  BH2  BR2
+2  BP1  BP2  BP3            BP6  BP7  BP8
+3  
+4                 BP4  WP4
+5                      WP5
+6  
+7  WP1  WP2  WP3            WP6  WP7  WP8
+8  WR1  WH1  WB1  WQ1  WK1  WB2  WH2  WR2
+Vez de Bruno.

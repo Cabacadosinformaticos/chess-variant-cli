@@ -1,0 +1,28 @@
+Jogador registado com sucesso.
+Jogador registado com sucesso.
+Ana 0 0 0 0
+Bruno 0 0 0 0
+Jogo iniciado com sucesso.
+    A    B    C    D    E    F    G    H
+1  BR1  BH1  BB1  BQ1  BK1  BB2  BH2  BR2
+2  BP1  BP2  BP3       BP5  BP6  BP7  BP8
+3  
+4                 BP4
+5  
+6            WH1
+7  WP1  WP2  WP3  WP4  WP5  WP6  WP7  WP8
+8  WR1       WB1  WQ10  WK1  WB2  WH2  WR2
+Vez de Ana.
+WP5 movida com sucesso.
+Existe um jogo em curso.
+    A    B    C    D    E    F    G    H
+1  BR1  BH1  BB1  BQ1  BK1  BB2  BH2  BR2
+2  BP1  BP2  BP3       BP5  BP6  BP7  BP8
+3  
+4                 BP4
+5                      WP5
+6            WH1
+7  WP1  WP2  WP3  WP4       WP6  WP7  WP8
+8  WR1       WB1  WQ10  WK1  WB2  WH2  WR2
+Vez de Bruno.
+Existe um jogo em curso.

@@ -1,0 +1,29 @@
+L ficheiro-inexistente.txt
+G naoexiste/sub/jogo.txt
+RJ Ana
+RJ Bruno
+IJ Continuação Ana Bruno
+,,,,BK1,,,
+,,,BP4,,,,
+,,,,,,,,
+,,,,WP5,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,WK1,,WR1
+MP Ana E8 E7
+MP Bruno D2 D4
+G jogo-teste.txt
+L jogo-teste.txt
+D Ana
+L jogo-teste.txt
+DJ
+MP Ana E4 D3
+MP Bruno E1 F1
+MP Ana E7 E8
+MP Bruno F1 F2
+MP Ana E8 G8
+MP Ana E8 E7
+LJ
+L outro.txt
+
