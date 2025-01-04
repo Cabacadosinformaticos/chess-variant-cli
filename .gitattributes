@@ -1,0 +1,4 @@
+* text=auto
+*.sh text eol=lf
+iotests/*.in text eol=lf
+iotests/*.out text eol=lf
