@@ -1,3 +1,6 @@
+> Assignment briefing as provided by the teaching team, in Portuguese. The project
+> documentation is in the [README](../README.md) and the [project report](REPORT.md).
+
 # Fundamentos da Programação [IADE](https://www.iade.europeia.pt/) <!-- omit in toc -->
 
 ## Projeto <!-- omit in toc -->
