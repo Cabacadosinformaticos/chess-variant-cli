@@ -225,7 +225,7 @@ namespace Chess.Controllers {
                 piece.MoveTo(end.Row, end.Column);
             } else if (isCastling) {
                 captured = null;
-                int rookFromColumn = end.Column > startColumn ? 7 : 0;
+                int rookFromColumn = FindCastlingRookColumn(piece, end.Column > startColumn ? 1 : -1);
                 int rookToColumn = end.Column > startColumn ? end.Column - 1 : end.Column + 1;
                 Piece rook = Board.GetPiece(startRow, rookFromColumn)!;
                 piece.MoveTo(end.Row, end.Column);
@@ -347,6 +347,22 @@ namespace Chess.Controllers {
         }
 
         /// <summary>
+        /// Finds the column of the first piece on the king's row in the given direction, which
+        /// is the rook a castling would use. Returns -1 when the row is empty up to the edge.
+        /// </summary>
+        /// <param name="king">The king that castles.</param>
+        /// <param name="step">+1 to look towards column H, -1 towards column A.</param>
+        /// <returns>The column of that piece, or -1.</returns>
+        private int FindCastlingRookColumn(Piece king, int step) {
+            for (int column = king.Column + step; column >= 0 && column < 8; column += step) {
+                if (Board!.GetPiece(king.Row, column) != null) {
+                    return column;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>
         /// Tells whether a king move is a legal castling: the king moves two squares on its row
         /// towards a rook of the same colour that has never moved, every square between them is
         /// empty and the king is not in check, does not cross and does not land on an attacked
@@ -369,21 +385,16 @@ namespace Chess.Controllers {
                 return false;
             }
 
-            int rookColumn = columnDelta > 0 ? 7 : 0;
-            if (endColumn == rookColumn) {
-                return false; // The king would land on the rook itself.
+            // The rook is the first piece the king meets in that direction, so every square
+            // between them is empty. The king must stop before reaching it.
+            int step = columnDelta > 0 ? 1 : -1;
+            int rookColumn = FindCastlingRookColumn(piece, step);
+            if (rookColumn < 0 || Math.Abs(rookColumn - piece.Column) <= Math.Abs(columnDelta)) {
+                return false;
             }
             Piece? rook = board.GetPiece(piece.Row, rookColumn);
             if (rook == null || rook.Type != 'R' || rook.Color != piece.Color || rook.HasMoved) {
                 return false;
-            }
-
-            // Every square between the king and its rook must be empty, the king's target included.
-            int step = columnDelta > 0 ? 1 : -1;
-            for (int column = piece.Column + step; column != rookColumn; column += step) {
-                if (board.GetPiece(piece.Row, column) != null) {
-                    return false;
-                }
             }
 
             // The king may not be in check, cross an attacked square or land on an attacked one.
@@ -425,7 +436,7 @@ namespace Chess.Controllers {
             int rookFromColumn = 0;
             int rookToColumn = 0;
             if (isCastling) {
-                rookFromColumn = endColumn > startColumn ? 7 : 0;
+                rookFromColumn = FindCastlingRookColumn(piece, endColumn > startColumn ? 1 : -1);
                 rookToColumn = endColumn > startColumn ? endColumn - 1 : endColumn + 1;
                 rook = board.GetPiece(startRow, rookFromColumn);
                 if (rook != null) {
