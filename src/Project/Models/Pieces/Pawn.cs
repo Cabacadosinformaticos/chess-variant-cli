@@ -20,7 +20,8 @@ namespace Chess.Models.Pieces {
         /// <summary>
         /// Normal pawn moves: one square forward to an empty square, two squares forward from the
         /// starting row when both squares are empty, or one square diagonally forward to capture.
-        /// En passant is NOT handled here, it is added in a later stage.
+        /// En passant and promotion depend on the previous move and are handled by the game
+        /// controller.
         /// </summary>
         public override bool CanMove(int endRow, int endColumn) {
             if (!IsWithinBounds(endRow, endColumn)) {
@@ -55,9 +56,6 @@ namespace Chess.Models.Pieces {
             return false;
         }
 
-        // TODO (later stage): en passant (capture a pawn that has just moved two squares) and
-        // promotion (a pawn reaching the last row becomes a queen).
-
         /// <summary>
         /// Special operation, once per game: the pawn steps one square backwards, towards its own
         /// side, and only onto an empty square. The pawn of a continued game starts with the
@@ -67,10 +65,12 @@ namespace Chess.Models.Pieces {
         /// <param name="endColumn">Final column of the instruction, which the pawn ignores.</param>
         /// <returns>True when the pawn may step back.</returns>
         public override bool CanUseSpecialOperation(int endRow, int endColumn) {
-            if (SpecialUsed) {
+            // A pawn on its own back rank has no square behind it
+            int backRow = BackRow();
+            if (SpecialUsed || backRow < 0 || backRow > 7) {
                 return false;
             }
-            return Board[BackRow()][Column] == null;
+            return Board[backRow][Column] == null;
         }
 
         /// <summary>
