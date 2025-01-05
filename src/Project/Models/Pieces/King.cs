@@ -19,8 +19,8 @@ namespace Chess.Models.Pieces {
 
         /// <summary>
         /// Normal king moves: one square in any direction, landing on an empty square or on an
-        /// opponent piece. Castling and the "king cannot move into check" rule are NOT handled
-        /// here; they are added in a later stage.
+        /// opponent piece. Castling and the rule that the king cannot move into check are
+        /// handled by the game controller, which sees the whole board.
         /// </summary>
         public override bool CanMove(int endRow, int endColumn) {
             if (!IsWithinBounds(endRow, endColumn)) {
@@ -33,11 +33,6 @@ namespace Chess.Models.Pieces {
 
             return isOneSquare && !IsFriendlyPiece(endRow, endColumn);
         }
-
-        // TODO (later stage): castling, handled by the game controller: king moves two squares
-        // towards a rook of the same colour that has never moved, all squares between them are
-        // empty and the king is not in check, does not cross and does not land on an attacked
-        // square; the rook jumps to the square the king crossed.
 
         // The king has no special operation: CanUseSpecialOperation keeps its base answer (false),
         // so the game controller answers "Movimento inválido." for an "OS" on a king.

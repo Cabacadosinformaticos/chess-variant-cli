@@ -102,7 +102,7 @@ namespace Chess.Models {
         /// <summary>
         /// Lists every square this piece could move to with a normal move. It is built from
         /// <see cref="CanMove"/>, so subclasses only have to implement the move geometry.
-        /// King must add castling here in a later stage.
+        /// Castling and en passant are recognised by the game controller, not here.
         /// </summary>
         /// <returns>List of (row, column) targets.</returns>
         public virtual List<(int Row, int Column)> GetValidMoves() {
@@ -120,7 +120,7 @@ namespace Chess.Models {
         /// <summary>
         /// Applies a move that was already validated with <see cref="CanMove"/>: clears the origin,
         /// captures whatever is on the target and updates the position of the piece.
-        /// Special moves (promotion, en passant, castling) are added in a later stage.
+        /// Promotion, en passant and castling are applied by the game controller.
         /// </summary>
         /// <param name="endRow">Target row (0 based).</param>
         /// <param name="endColumn">Target column (0 based).</param>

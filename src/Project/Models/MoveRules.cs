@@ -78,7 +78,7 @@ namespace Chess.Models {
 
         /// <summary>
         /// Tells whether a colour still has at least one king on the board. Without a king the
-        /// check filter is skipped, as the assignment requires.
+        /// check filter is skipped, since a board of a continued game may have no king.
         /// </summary>
         /// <param name="board">Board to inspect.</param>
         /// <param name="color">Colour to test ('W' or 'B').</param>

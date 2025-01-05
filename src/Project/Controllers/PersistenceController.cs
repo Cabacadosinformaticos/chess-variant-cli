@@ -32,7 +32,7 @@ namespace Chess.Controllers {
         private const string FileHeader = "CHESS-SAVE 1";
         private const string GameHeader = "GAME";
 
-        // UTF-8 without BOM, as the assignment requires for every file it writes.
+        // UTF-8 without BOM, the same encoding as the console output.
         private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(false);
 
         private readonly PlayerController playerController;
